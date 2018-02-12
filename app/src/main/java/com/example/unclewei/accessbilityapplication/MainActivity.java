@@ -1,8 +1,14 @@
 package com.example.unclewei.accessbilityapplication;
 
+import android.accessibilityservice.AccessibilityServiceInfo;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -12,6 +18,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
+import android.widget.TextView;
+
+import com.example.unclewei.accessbilityapplication.alarm.RefreshUtil;
+import com.example.unclewei.accessbilityapplication.alarm.UploadAlarmUtil;
+import com.example.unclewei.accessbilityapplication.service.AccessibilityService;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -40,6 +55,9 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        UploadAlarmUtil.invokeRefreshAlarmManager(getApplicationContext());
+
     }
 
     @Override
@@ -85,8 +103,12 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_gallery) {
 
         } else if (id == R.id.nav_slideshow) {
+            RefreshUtil.startWeChat(this);
 
         } else if (id == R.id.nav_manage) {
+            //打开系统无障碍设置界面
+            Intent accessibleIntent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+            startActivity(accessibleIntent);
 
         } else if (id == R.id.nav_share) {
 
@@ -98,4 +120,32 @@ public class MainActivity extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+
+    /**
+     * 检查服务是否开启
+     */
+    private boolean isServiceEnabled() {
+        AccessibilityManager accessibilityManager = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
+        List<AccessibilityServiceInfo> accessibilityServices = accessibilityManager.getEnabledAccessibilityServiceList(
+                AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+        for (AccessibilityServiceInfo info : accessibilityServices) {
+            if (info.getId().contains("com.example.unclewei.accessbilityapplication/.service.AccessibilityService")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        TextView textView = findViewById(R.id.tv_message);
+        if (isServiceEnabled()) {
+            textView.setText("已经打开服务");
+        } else {
+            textView.setText("没有打开服务，请打开服务");
+        }
+    }
+
+
 }
